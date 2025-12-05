@@ -17,10 +17,8 @@ export default async function handler(req, res) {
 
     const result = data.data[0];
 
-    // ✅ This line ensures GPT recognizes the response as JSON
     res.setHeader("Content-Type", "application/json");
 
-    // ✅ Send clean and structured JSON back to GPT
     return res.status(200).json({
       latitude: result.latitude,
       longitude: result.longitude,
@@ -31,3 +29,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 }
+
+// ✅ Tell Vercel to use Node.js runtime instead of Edge
+export const config = {
+  runtime: 'nodejs'
+};
