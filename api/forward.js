@@ -1,41 +1,42 @@
+// /api/forward.js (Next.js API route or Express endpoint)
+
 export default async function handler(req, res) {
-  const { query } = req.query;
-
-  if (!query) {
-    return res.status(400).json({ error: "Missing query parameter" });
-  }
-
-  // ✅ Must use HTTPS
-  const apiUrl = `https://api.positionstack.com/v1/forward?access_key=087adc70e3d6b23f0b1c7ee4713cac66&query=${encodeURIComponent(query)}`;
-
   try {
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-
-    // ✅ Log for debugging — will show in Vercel "Function Logs"
-    console.log("Positionstack API response:", JSON.stringify(data, null, 2));
-
-    if (!data || !data.data || data.data.length === 0) {
-      return res.status(404).json({ error: "No results found" });
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ error: "Missing 'query' parameter" });
     }
 
-    const result = data.data[0];
+    // Build PositionStack request URL
+    const apiKey = process.env.POSITIONSTACK_API_KEY;
+    const url = `http://api.positionstack.com/v1/forward?access_key=${apiKey}&query=${encodeURIComponent(query)}`;
 
-    res.setHeader("Content-Type", "application/json");
+    // Fetch the data
+    const response = await fetch(url);
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("PositionStack error:", text);
+      return res.status(response.status).json({ error: "Upstream PositionStack error" });
+    }
 
+    // Parse JSON properly
+    const data = await response.json();
+
+    // Return only necessary data
     return res.status(200).json({
-      latitude: result.latitude,
-      longitude: result.longitude,
-      label: result.label,
-      confidence: result.confidence ?? null
+      success: true,
+      query,
+      coordinates: data.data?.[0]
+        ? {
+            latitude: data.data[0].latitude,
+            longitude: data.data[0].longitude,
+            label: data.data[0].label,
+            confidence: data.data[0].confidence,
+          }
+        : null,
     });
-  } catch (err) {
-    console.error("API Proxy error:", err);
-    return res.status(500).json({ error: "Proxy error", details: err.message });
+  } catch (error) {
+    console.error("Proxy error:", error);
+    return res.status(500).json({ error: "Internal server error", details: error.message });
   }
 }
-
-// ✅ This is CRITICAL — forces Vercel to use Node.js runtime instead of Edge
-export const config = {
-  runtime: 'nodejs'
-};
