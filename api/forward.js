@@ -1,18 +1,31 @@
 // api/forward.js
+
 export default async function handler(req, res) {
-  const query = req.query.query;
+  const { query } = req.query;
 
   if (!query) {
-    return res.status(400).json({ error: "Missing 'query' parameter" });
+    return res.status(400).json({ error: "Missing query parameter" });
   }
 
-  const url = `http://api.positionstack.com/v1/forward?access_key=087adc70e3d6b23f0b1c7ee4713cac66&query=${encodeURIComponent(query)}`;
+  const apiUrl = `http://api.positionstack.com/v1/forward?access_key=087adc70e3d6b23f0b1c7ee4713cac66&query=${encodeURIComponent(query)}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(apiUrl);
     const data = await response.json();
-    return res.status(200).json(data);
+
+    if (!data || !data.data || data.data.length === 0) {
+      return res.status(404).json({ error: "No results found" });
+    }
+
+    const result = data.data[0];
+
+    return res.status(200).json({
+      latitude: result.latitude,
+      longitude: result.longitude,
+      label: result.label,
+      confidence: result.confidence ?? null
+    });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to reach PositionStack", details: err.message });
+    return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 }
