@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing query parameter" });
   }
 
-  // ✅ Use HTTPS (even though PositionStack's free tier docs say HTTP)
+  // ✅ Use HTTPS — this is critical!
   const apiUrl = `https://api.positionstack.com/v1/forward?access_key=087adc70e3d6b23f0b1c7ee4713cac66&query=${encodeURIComponent(query)}`;
 
   try {
@@ -32,6 +32,7 @@ export default async function handler(req, res) {
   }
 }
 
+// ✅ Make sure Vercel runs this as a Node.js function
 export const config = {
   runtime: 'nodejs'
 };
